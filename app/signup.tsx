@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Button, Alert } from 'react-native';
+import { View, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { supabase } from '../supabase';
+import { TextInput, Button, Text, Card } from 'react-native-paper';
 
 export default function SignupScreen() {
   const router = useRouter();
@@ -19,26 +20,35 @@ export default function SignupScreen() {
   };
 
   return (
-    <View style={{ padding: 20, flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-      <Text style={{ fontSize: 24, fontWeight: 'bold' }}>Create an Account</Text>
+    <View className="flex-1 justify-center items-center bg-gray-100 p-6">
+      <Card className="w-80 p-5">
+        <Text variant="titleLarge" className="text-center mb-4">Create an Account</Text>
 
-      <Text>Email:</Text>
-      <TextInput
-        style={{ borderWidth: 1, marginBottom: 10, padding: 5, width: '80%' }}
-        value={email}
-        onChangeText={setEmail}
-      />
+        <TextInput 
+          label="Email" 
+          value={email} 
+          onChangeText={setEmail} 
+          mode="outlined" 
+          className="mb-2"
+        />
 
-      <Text>Password:</Text>
-      <TextInput
-        style={{ borderWidth: 1, marginBottom: 10, padding: 5, width: '80%' }}
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-      />
+        <TextInput 
+          label="Password" 
+          value={password} 
+          onChangeText={setPassword} 
+          secureTextEntry 
+          mode="outlined" 
+          className="mb-2"
+        />
 
-      <Button title="Sign Up" onPress={handleSignUp} />
-      <Button title="Back to Login" onPress={() => router.replace('/login')} color="gray" />
+        <Button mode="contained" className="mt-4 bg-blue-500" onPress={handleSignUp}>
+          Sign Up
+        </Button>
+
+        <Button mode="text" className="mt-2" onPress={() => router.replace('/login')}>
+          Back to Login
+        </Button>
+      </Card>
     </View>
   );
 }

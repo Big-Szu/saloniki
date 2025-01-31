@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Button, Alert } from 'react-native';
+import { View } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import * as AuthSession from 'expo-auth-session';
 import { supabase } from '../supabase';
+import { TextInput, Button, Text, Card, Divider } from 'react-native-paper';
 
 // Make sure WebBrowser session is ready
 WebBrowser.maybeCompleteAuthSession();
@@ -16,7 +17,7 @@ export default function LoginScreen() {
   // Email/Password Login
   const handleSignIn = async () => {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) Alert.alert('Login Error', error.message);
+    if (error) alert('Login Error', error.message);
     else router.replace('/dashboard');
   };
 
@@ -30,20 +31,46 @@ export default function LoginScreen() {
     });
   
     if (error) {
-      Alert.alert('Google Login Failed', error.message);
+      alert('Google Login Failed', error.message);
     }
   };
+
   return (
-    <View style={{ padding: 20 }}>
-      <Text>Email:</Text>
-      <TextInput style={{ borderWidth: 1, marginBottom: 10, padding: 5 }} value={email} onChangeText={setEmail} />
+    <View className="flex-1 justify-center items-center bg-gray-100 p-6">
+      <Card className="w-80 p-5">
+        <Text variant="titleLarge" className="text-center mb-4">Login</Text>
 
-      <Text>Password:</Text>
-      <TextInput style={{ borderWidth: 1, marginBottom: 10, padding: 5 }} value={password} onChangeText={setPassword} secureTextEntry />
+        <TextInput 
+          label="Email" 
+          value={email} 
+          onChangeText={setEmail} 
+          mode="outlined" 
+          className="mb-2"
+        />
 
-      <Button title="Login" onPress={handleSignIn} />
-      <Button title="Login with Google" onPress={handleGoogleLogin} color="red" />
-      <Button title="Sign Up" onPress={() => router.push('/signup')} color="blue" />
+        <TextInput 
+          label="Password" 
+          value={password} 
+          onChangeText={setPassword} 
+          secureTextEntry 
+          mode="outlined" 
+          className="mb-2"
+        />
+
+        <Button mode="contained" className="mt-4 bg-blue-500" onPress={handleSignIn}>
+          Login
+        </Button>
+
+        <Divider className="my-4" />
+
+        <Button mode="contained" className="bg-red-500" onPress={handleGoogleLogin}>
+          Login with Google
+        </Button>
+
+        <Button mode="text" className="mt-2" onPress={() => router.push('/signup')}>
+          Sign Up
+        </Button>
+      </Card>
     </View>
   );
 }

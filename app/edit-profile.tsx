@@ -10,21 +10,23 @@ export default function EditProfileScreen() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
 
+  // Fetch the profile row from the "profiles" table.
   useEffect(() => {
     async function fetchProfile() {
-      const data = await getUserProfile();
-      if (!data) {
+      const profile = await getUserProfile();
+      if (!profile) {
         Alert.alert('Error', 'Failed to load profile.');
         router.replace('/login' as any);
-      } else {
-        setName(data.name);
-        setEmail(data.email);
+        return;
       }
+      setName(profile.name);
+      setEmail(profile.email);
     }
     fetchProfile();
   }, [router]);
 
   const handleSave = async () => {
+    // Update the user's profile row in the profiles table.
     const { error } = await updateUserProfile(name, '');
     if (error) {
       Alert.alert('Error', 'Failed to update profile.');
@@ -43,7 +45,9 @@ export default function EditProfileScreen() {
           { name: 'Edit Profile', path: '/edit-profile' },
         ]}
       />
-      <Text style={{ fontSize: 20, fontWeight: 'bold', marginBottom: 16 }}>Edit Profile</Text>
+      <Text style={{ fontSize: 20, fontWeight: 'bold', marginBottom: 16 }}>
+        Edit Profile
+      </Text>
       <Text style={{ marginBottom: 8 }}>Name:</Text>
       <TextInput
         mode="outlined"

@@ -3,7 +3,8 @@ import { View, Alert } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { TextInput, Button, Text, Card } from 'react-native-paper';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { getCarById, updateCar, getCarMakes, getCarModelsForMake } from '../../supabase';
+import { getCarById, updateCar, getCarMakes, getCarModelsForMake } from '../../../supabase';
+import Breadcrumbs from '../../../components/Breadcrumbs';
 
 export default function EditCarScreen() {
   const router = useRouter();
@@ -12,8 +13,8 @@ export default function EditCarScreen() {
   const [models, setModels] = useState<any[]>([]);
   const [selectedMake, setSelectedMake] = useState<number | null>(null);
   const [selectedModel, setSelectedModel] = useState<number | null>(null);
-  const [engine, setEngine] = useState('');
   const [year, setYear] = useState('');
+  const [engine, setEngine] = useState('');
   const [vin, setVin] = useState('');
   const [color, setColor] = useState('');
   const [loading, setLoading] = useState(true);
@@ -22,8 +23,8 @@ export default function EditCarScreen() {
     async function fetchCarDetails() {
       const car = await getCarById(id as string);
       if (car) {
-        setEngine(car.engine || '');
         setYear(car.year ? car.year.toString() : '');
+        setEngine(car.engine || '');
         setVin(car.vin || '');
         setColor(car.color || '');
         setSelectedMake(car.make_id);
@@ -56,18 +57,23 @@ export default function EditCarScreen() {
   }, [selectedMake]);
 
   const handleUpdateCar = async () => {
-    if (!selectedMake || !selectedModel || !engine || !year) {
-      Alert.alert('Error', 'Please fill all required fields.');
+    if (!selectedMake || !selectedModel || !year.trim() || !engine.trim()) {
+      Alert.alert('Error', 'Please fill all required fields: Make, Model, Year, and Engine.');
       return;
     }
     const yearNumber = parseInt(year, 10);
+    const currentYear = new Date().getFullYear();
+    if (isNaN(yearNumber) || yearNumber < 1800 || yearNumber > currentYear) {
+      Alert.alert('Error', `Year must be between 1800 and ${currentYear}.`);
+      return;
+    }
     const { error } = await updateCar(id as string, { 
       make_id: selectedMake, 
       model_id: selectedModel, 
-      engine, 
       year: yearNumber, 
-      vin, 
-      color 
+      engine: engine.trim(), 
+      vin: vin.trim(), 
+      color: color.trim() 
     });
     if (error) {
       Alert.alert('Error', 'Failed to update car: ' + error.message);
@@ -87,6 +93,11 @@ export default function EditCarScreen() {
 
   return (
     <View style={{ flex: 1, padding: 16 }}>
+      <Breadcrumbs paths={[
+        { name: 'Dashboard', path: '/dashboard' },
+        { name: 'Cars', path: '/cars' },
+        { name: 'Edit Car', path: `/cars/edit/${id}` }
+      ]} />
       <Card style={{ padding: 16 }}>
         <Text variant="titleLarge" style={{ marginBottom: 16 }}>Edit Car</Text>
         <Text>Make:</Text>
@@ -109,13 +120,7 @@ export default function EditCarScreen() {
             <Picker.Item key={model.id} label={model.name} value={model.id} />
           ))}
         </Picker>
-        <TextInput
-          label="Engine"
-          value={engine}
-          onChangeText={setEngine}
-          mode="outlined"
-          style={{ marginBottom: 8 }}
-        />
+        <Text style={{ fontWeight: 'bold' }}>Year*:</Text>
         <TextInput
           label="Year"
           value={year}
@@ -124,6 +129,15 @@ export default function EditCarScreen() {
           style={{ marginBottom: 8 }}
           keyboardType="numeric"
         />
+        <Text style={{ fontWeight: 'bold' }}>Engine*:</Text>
+        <TextInput
+          label="Engine"
+          value={engine}
+          onChangeText={setEngine}
+          mode="outlined"
+          style={{ marginBottom: 8 }}
+        />
+        <Text>VIN:</Text>
         <TextInput
           label="VIN"
           value={vin}
@@ -131,6 +145,7 @@ export default function EditCarScreen() {
           mode="outlined"
           style={{ marginBottom: 8 }}
         />
+        <Text>Color:</Text>
         <TextInput
           label="Color"
           value={color}

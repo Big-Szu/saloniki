@@ -170,3 +170,12 @@ export async function getCarModelsForMake(makeId: number) {
   }
   return data;
 }
+
+export async function getAllCarModels() {
+  const { data, error } = await supabase.from('car_models').select('*').order('name');
+  if (error) {
+    console.error(error);
+    return [];
+  }
+  return data;
+}

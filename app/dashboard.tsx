@@ -2,24 +2,46 @@ import React, { useEffect, useState } from 'react';
 import { View, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Text, Button, Card } from 'react-native-paper';
 import { useRouter } from 'expo-router';
-import { getCarsForUser, getUserProfile, supabase } from '../supabase';
+import { getUserProfile, getCarsForUser, getCarMakes, getAllCarModels, supabase } from '../supabase';
+import Breadcrumbs from '../components/Breadcrumbs';
 
 export default function DashboardScreen() {
   const router = useRouter();
   const [cars, setCars] = useState<any[]>([]);
   const [profile, setProfile] = useState<{ name: string; email: string } | null>(null);
+  const [makes, setMakes] = useState<any[]>([]);
+  const [models, setModels] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function fetchData() {
       const profileData = await getUserProfile();
       setProfile(profileData);
+
       const carsData = await getCarsForUser();
       setCars(carsData);
+
+      const makesData = await getCarMakes();
+      setMakes(makesData);
+
+      const modelsData = await getAllCarModels();
+      setModels(modelsData);
+
       setLoading(false);
     }
     fetchData();
   }, []);
+
+  // Build mappings for easier display.
+  const makeMap: Record<number, string> = {};
+  makes.forEach((make) => {
+    makeMap[make.id] = make.name;
+  });
+
+  const modelMap: Record<number, string> = {};
+  models.forEach((model) => {
+    modelMap[model.id] = model.name;
+  });
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -28,7 +50,7 @@ export default function DashboardScreen() {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <View style={{ flex:1, justifyContent: 'center', alignItems: 'center' }}>
         <ActivityIndicator size="large" />
       </View>
     );
@@ -36,7 +58,7 @@ export default function DashboardScreen() {
 
   return (
     <View style={{ flex: 1, padding: 16 }}>
-      {/* Header with welcome text and profile actions */}
+      {/* Welcome Header */}
       <View style={{ marginBottom: 16, alignItems: 'center' }}>
         <Text variant="headlineLarge">
           Welcome, {profile?.name || 'Guest'}!
@@ -49,26 +71,28 @@ export default function DashboardScreen() {
           >
             View Profile
           </Button>
-          <Button
-            mode="contained"
-            onPress={handleLogout}
-            style={{ backgroundColor: 'red' }}
-          >
+          <Button mode="contained" onPress={handleLogout} style={{ backgroundColor: 'red' }}>
             Logout
           </Button>
         </View>
       </View>
 
-      {/* Button to add a new car */}
+      {/* Breadcrumbs starting at Dashboard */}
+      <Breadcrumbs paths={[
+        { name: 'Dashboard', path: '/dashboard' },
+        { name: 'Cars', path: '/cars' }
+      ]} />
+
+      {/* Add New Car Button */}
       <Button
         mode="contained"
         onPress={() => router.push('/cars/new' as any)}
-        style={{ marginBottom: 16 }}
+        style={{ marginVertical: 16 }}
       >
         Add New Car
       </Button>
 
-      {/* Cars list */}
+      {/* Cars List */}
       {cars.length === 0 ? (
         <Text>No vehicles found.</Text>
       ) : (
@@ -78,13 +102,11 @@ export default function DashboardScreen() {
           renderItem={({ item }) => (
             <TouchableOpacity onPress={() => router.push(`/cars/${item.id}` as any)}>
               <Card style={{ marginBottom: 12, padding: 12 }}>
-                <Text variant="titleMedium">
-                  Car ID: {item.id}
+                <Text style={{ fontSize: 18, fontWeight: 'bold' }}>
+                  {makeMap[item.make_id] || 'Unknown Make'}, {modelMap[item.model_id] || 'Unknown Model'}
                 </Text>
                 <Text>Year: {item.year}</Text>
                 <Text>Engine: {item.engine}</Text>
-                {item.vin && <Text>VIN: {item.vin}</Text>}
-                {item.color && <Text>Color: {item.color}</Text>}
               </Card>
             </TouchableOpacity>
           )}

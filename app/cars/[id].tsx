@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { View, ScrollView, ActivityIndicator } from 'react-native';
+import { View, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Text, Button, Card } from 'react-native-paper';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { getCarById, getRepairsForCar, getCarMakes, getCarModelsForMake, deleteCar } from '../../supabase';
+import Breadcrumbs from '../../components/Breadcrumbs';
 
 export default function CarDetailScreen() {
   const router = useRouter();
@@ -18,11 +19,11 @@ export default function CarDetailScreen() {
       const carData = await getCarById(id as string);
       if (carData) {
         setCar(carData);
-        // Get make name
+        // Fetch the make name using carData.make_id
         const makes = await getCarMakes();
         const make = makes.find((m: any) => m.id === carData.make_id);
         setMakeName(make ? make.name : '');
-        // Get model name from the selected make
+        // Fetch the model name using carData.model_id and the same make
         const models = await getCarModelsForMake(carData.make_id);
         const model = models.find((m: any) => m.id === carData.model_id);
         setModelName(model ? model.name : '');
@@ -61,18 +62,42 @@ export default function CarDetailScreen() {
 
   return (
     <ScrollView style={{ flex: 1, padding: 16 }}>
+      {/* Breadcrumbs starting at Dashboard */}
+      <Breadcrumbs 
+        paths={[
+          { name: 'Dashboard', path: '/dashboard' },
+          { name: 'Cars', path: '/cars' },
+          { name: `${makeName} ${modelName}`, path: `/cars/${id}` }
+        ]}
+      />
       <Card style={{ padding: 16, marginBottom: 16 }}>
         <Text variant="titleLarge">{makeName} {modelName}</Text>
-        <Text>Engine: {car.engine}</Text>
         <Text>Year: {car.year}</Text>
+        <Text>Engine: {car.engine}</Text>
         {car.vin && <Text>VIN: {car.vin}</Text>}
         {car.color && <Text>Color: {car.color}</Text>}
       </Card>
-      <Button mode="contained" onPress={() => router.push(`/cars/edit/${id}` as any)} style={{ marginBottom: 16 }}>
+      <Button 
+        mode="contained" 
+        onPress={() => router.push(`/cars/edit/${id}` as any)} 
+        style={{ marginBottom: 16 }}
+      >
         Edit Car
       </Button>
-      <Button mode="contained" onPress={handleDelete} style={{ marginBottom: 16, backgroundColor: 'red' }}>
+      <Button 
+        mode="contained" 
+        onPress={handleDelete} 
+        style={{ marginBottom: 16, backgroundColor: 'red' }}
+      >
         Delete Car
+      </Button>
+      {/* Add Repair Button */}
+      <Button 
+        mode="contained" 
+        onPress={() => router.push(`/cars/${id}/repairs/new` as any)} 
+        style={{ marginBottom: 16, backgroundColor: '#3B82F6' }}
+      >
+        Add Repair
       </Button>
       <Text variant="titleMedium" style={{ marginBottom: 8 }}>Past Repairs / Maintenance:</Text>
       {repairs.length === 0 ? (

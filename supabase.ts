@@ -179,3 +179,50 @@ export async function getAllCarModels() {
   }
   return data;
 }
+
+// ... existing supabase.ts code ...
+
+// Workshop Profile Helpers
+
+export async function getWorkshopProfile() {
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (userError || !userData?.user) {
+    console.error('Error getting user:', userError);
+    return null;
+  }
+  const { data, error } = await supabase
+    .from('workshops')
+    .select('*')
+    .eq('id', userData.user.id)
+    .single();
+  if (error) {
+    console.error('Error fetching workshop profile:', error);
+    return null;
+  }
+  return data;
+}
+
+export async function createWorkshopProfile(workshopData: { logo?: string; name: string; address?: string; phone?: string; webpage?: string; }) {
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (userError || !userData?.user) {
+    return { error: userError || 'User not authenticated' };
+  }
+  const { data, error } = await supabase
+    .from('workshops')
+    .insert([{ ...workshopData, id: userData.user.id }])
+    .single();
+  return { data, error };
+}
+
+export async function updateWorkshopProfile(workshopData: { logo?: string; name?: string; address?: string; phone?: string; webpage?: string; }) {
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (userError || !userData?.user) {
+    return { error: userError || 'User not authenticated' };
+  }
+  const { data, error } = await supabase
+    .from('workshops')
+    .update(workshopData)
+    .eq('id', userData.user.id)
+    .single();
+  return { data, error };
+}

@@ -19,11 +19,9 @@ export default function CarDetailScreen() {
       const carData = await getCarById(id as string);
       if (carData) {
         setCar(carData);
-        // Fetch the make name using carData.make_id
         const makes = await getCarMakes();
         const make = makes.find((m: any) => m.id === carData.make_id);
         setMakeName(make ? make.name : '');
-        // Fetch the model name using carData.model_id and the same make
         const models = await getCarModelsForMake(carData.make_id);
         const model = models.find((m: any) => m.id === carData.model_id);
         setModelName(model ? model.name : '');
@@ -46,7 +44,7 @@ export default function CarDetailScreen() {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <View style={{ flex:1, justifyContent: 'center', alignItems: 'center' }}>
         <ActivityIndicator size="large" />
       </View>
     );
@@ -54,15 +52,14 @@ export default function CarDetailScreen() {
 
   if (!car) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <View style={{ flex:1, justifyContent: 'center', alignItems: 'center' }}>
         <Text>No car found.</Text>
       </View>
     );
   }
 
   return (
-    <ScrollView style={{ flex: 1, padding: 16 }}>
-      {/* Breadcrumbs starting at Dashboard */}
+    <ScrollView style={{ flex:1, padding: 16 }}>
       <Breadcrumbs 
         paths={[
           { name: 'Dashboard', path: '/dashboard' },
@@ -91,7 +88,6 @@ export default function CarDetailScreen() {
       >
         Delete Car
       </Button>
-      {/* Add Repair Button */}
       <Button 
         mode="contained" 
         onPress={() => router.push(`/cars/${id}/repairs/new` as any)} 
@@ -104,13 +100,17 @@ export default function CarDetailScreen() {
         <Text>No repairs found.</Text>
       ) : (
         repairs.map((repair) => (
-          <Card key={repair.id} style={{ marginBottom: 8, padding: 8 }}>
-            <Text>Description: {repair.description}</Text>
-            <Text>Date: {new Date(repair.repair_date).toLocaleDateString()}</Text>
-            <Text>Cost: {repair.cost}</Text>
-            {repair.confirmed && <Text>Repair Confirmed</Text>}
-            {repair.workshop_id && <Text>Workshop: {repair.workshop_id}</Text>}
-          </Card>
+          <TouchableOpacity key={repair.id} onPress={() => router.push(`/cars/${id}/repairs/${repair.id}` as any)}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 1, borderColor: '#ccc' }}>
+              <Text style={{ flex: 1 }}>{new Date(repair.repair_date).toLocaleDateString()}</Text>
+              <Text style={{ flex: 1, textAlign: 'center' }}>
+                {repair.cost} {repair.currency}
+              </Text>
+              <Text style={{ flex: 1, textAlign: 'right' }}>
+                {repair.confirmed ? '★' : '☆'}
+              </Text>
+            </View>
+          </TouchableOpacity>
         ))
       )}
     </ScrollView>

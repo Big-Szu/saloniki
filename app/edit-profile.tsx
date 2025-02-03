@@ -2,35 +2,26 @@ import React, { useEffect, useState } from 'react';
 import { View, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Text, Button, TextInput } from 'react-native-paper';
-import { supabase, updateUserProfile } from '../supabase';
 import Breadcrumbs from '../components/Breadcrumbs';
+import { getUserProfile, updateUserProfile } from '../supabase';
 
 export default function EditProfileScreen() {
   const router = useRouter();
-  const [user, setUser] = useState<{ name: string; email: string } | null>(null);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
 
   useEffect(() => {
-    async function fetchUser() {
-      const { data, error } = await supabase.auth.getUser();
-      if (error) {
-        console.error('Error fetching user:', error);
-        Alert.alert('Error', 'Failed to load user details.');
-        router.replace('/login');
-        return;
-      }
-      if (data?.user) {
-        const fullName = data.user.user_metadata?.full_name || 'N/A';
-        const userEmail = data.user.email || 'N/A';
-        setUser({ name: fullName, email: userEmail });
-        setName(fullName);
-        setEmail(userEmail);
+    async function fetchProfile() {
+      const data = await getUserProfile();
+      if (!data) {
+        Alert.alert('Error', 'Failed to load profile.');
+        router.replace('/login' as any);
       } else {
-        router.replace('/login');
+        setName(data.name);
+        setEmail(data.email);
       }
     }
-    fetchUser();
+    fetchProfile();
   }, [router]);
 
   const handleSave = async () => {
@@ -68,7 +59,11 @@ export default function EditProfileScreen() {
         value={email}
         editable={false}
       />
-      <Button mode="contained" style={{ backgroundColor: '#2563EB' }} onPress={handleSave}>
+      <Button
+        mode="contained"
+        style={{ backgroundColor: '#2563EB' }}
+        onPress={handleSave}
+      >
         Save Changes
       </Button>
     </View>

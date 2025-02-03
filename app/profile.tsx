@@ -1,33 +1,25 @@
 import React, { useEffect, useState } from 'react';
 import { View, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
-import { supabase } from '../supabase';
 import { Text, Button } from 'react-native-paper';
 import Breadcrumbs from '../components/Breadcrumbs';
+import { getUserProfile } from '../supabase';
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const [user, setUser] = useState<{ name: string; email: string } | null>(null);
+  const [profile, setProfile] = useState<{ name: string; email: string } | null>(null);
 
   useEffect(() => {
-    async function fetchUser() {
-      const { data, error } = await supabase.auth.getUser();
-      if (error) {
-        console.error('Error fetching user:', error);
-        Alert.alert('Error', 'Failed to fetch user.');
-        router.replace('/login');
-        return;
-      }
-      if (data?.user) {
-        setUser({
-          name: data.user.user_metadata?.full_name || 'N/A',
-          email: data.user.email || 'N/A',
-        });
+    async function fetchProfile() {
+      const data = await getUserProfile();
+      if (!data) {
+        Alert.alert('Error', 'Failed to fetch profile.');
+        router.replace('/login' as any);
       } else {
-        router.replace('/login');
+        setProfile({ name: data.name, email: data.email });
       }
     }
-    fetchUser();
+    fetchProfile();
   }, [router]);
 
   return (
@@ -39,15 +31,19 @@ export default function ProfileScreen() {
         ]}
       />
       <Text style={{ fontSize: 20, fontWeight: 'bold', marginBottom: 8 }}>Profile</Text>
-      {user ? (
+      {profile ? (
         <View>
-          <Text style={{ fontSize: 16 }}>Name: {user.name}</Text>
-          <Text style={{ fontSize: 16 }}>Email: {user.email}</Text>
+          <Text style={{ fontSize: 16 }}>Name: {profile.name}</Text>
+          <Text style={{ fontSize: 16 }}>Email: {profile.email}</Text>
         </View>
       ) : (
         <Text>Loading...</Text>
       )}
-      <Button mode="contained" style={{ marginTop: 16, backgroundColor: '#2563EB' }} onPress={() => router.push('/edit-profile')}>
+      <Button
+        mode="contained"
+        style={{ marginTop: 16, backgroundColor: '#2563EB' }}
+        onPress={() => router.push('/edit-profile' as any)}
+      >
         Edit Profile
       </Button>
     </View>

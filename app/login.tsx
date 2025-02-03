@@ -6,7 +6,6 @@ import * as AuthSession from 'expo-auth-session';
 import { supabase } from '../supabase';
 import { TextInput, Button, Text, Card, Divider } from 'react-native-paper';
 
-// Make sure WebBrowser session is ready
 WebBrowser.maybeCompleteAuthSession();
 
 export default function LoginScreen() {
@@ -14,60 +13,54 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  // Email/Password Login
   const handleSignIn = async () => {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) alert('Login Error', error.message);
-    else router.replace('/dashboard');
+    if (error) {
+      alert(`Login Error: ${error.message}`);
+    } else if (data?.user) {
+      router.replace('/dashboard');
+    }
   };
 
-  // Google Login
   const handleGoogleLogin = async () => {
-    const redirectUrl = AuthSession.makeRedirectUri(); // No need for useProxy
-  
+    const redirectUrl = AuthSession.makeRedirectUri();
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo: redirectUrl },
     });
-  
+
     if (error) {
-      alert('Google Login Failed', error.message);
+      alert(`Google Login Failed: ${error.message}`);
     }
   };
 
   return (
-    <View className="flex-1 justify-center items-center bg-gray-100 p-6">
-      <Card className="w-80 p-5">
-        <Text variant="titleLarge" className="text-center mb-4">Login</Text>
-
-        <TextInput 
-          label="Email" 
-          value={email} 
-          onChangeText={setEmail} 
-          mode="outlined" 
-          className="mb-2"
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F3F4F6', padding: 24 }}>
+      <Card style={{ width: 320, padding: 20 }}>
+        <Text variant="titleLarge" style={{ textAlign: 'center', marginBottom: 16 }}>Login</Text>
+        <TextInput
+          label="Email"
+          value={email}
+          onChangeText={setEmail}
+          mode="outlined"
+          style={{ marginBottom: 8 }}
         />
-
-        <TextInput 
-          label="Password" 
-          value={password} 
-          onChangeText={setPassword} 
-          secureTextEntry 
-          mode="outlined" 
-          className="mb-2"
+        <TextInput
+          label="Password"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+          mode="outlined"
+          style={{ marginBottom: 8 }}
         />
-
-        <Button mode="contained" className="mt-4 bg-blue-500" onPress={handleSignIn}>
+        <Button mode="contained" style={{ marginTop: 16, backgroundColor: '#3B82F6' }} onPress={handleSignIn}>
           Login
         </Button>
-
-        <Divider className="my-4" />
-
-        <Button mode="contained" className="bg-red-500" onPress={handleGoogleLogin}>
+        <Divider style={{ marginVertical: 16 }} />
+        <Button mode="contained" style={{ backgroundColor: '#EF4444' }} onPress={handleGoogleLogin}>
           Login with Google
         </Button>
-
-        <Button mode="text" className="mt-2" onPress={() => router.push('/signup')}>
+        <Button mode="text" style={{ marginTop: 8 }} onPress={() => router.push('/signup')}>
           Sign Up
         </Button>
       </Card>

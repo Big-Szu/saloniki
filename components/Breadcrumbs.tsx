@@ -1,25 +1,26 @@
+import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 
-export default function Breadcrumbs({ path }: { path: string[] }) {
+interface BreadcrumbProps {
+  paths: { name: string; path: string }[];
+}
+
+export default function Breadcrumbs({ paths }: BreadcrumbProps) {
   const router = useRouter();
 
   return (
-    <View className="flex-row items-center mb-4">
-      {path.map((segment, index) => {
-        const fullPath = '/' + path.slice(0, index + 1).join('/').toLowerCase();
-
-        return (
-          <TouchableOpacity
-            key={index}
-            onPress={() => router.push(fullPath as any)}  // ✅ Explicitly cast as `any`
-            className="flex-row items-center"
-          >
-            <Text className="text-blue-500">{segment}</Text>
-            {index < path.length - 1 && <Text className="mx-1">/</Text>}
+    <View style={{ flexDirection: 'row', alignItems: 'center', padding: 8 }}>
+      {paths.map((item, index) => (
+        <View key={item.path} style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <TouchableOpacity onPress={() => router.push(item.path as any)}>
+            <Text style={{ color: '#2563EB', fontSize: 16 }}>{item.name}</Text>
           </TouchableOpacity>
-        );
-      })}
+          {index < paths.length - 1 && (
+            <Text style={{ marginHorizontal: 4, color: '#6B7280', fontSize: 16 }}>{'>'}</Text>
+          )}
+        </View>
+      ))}
     </View>
   );
 }

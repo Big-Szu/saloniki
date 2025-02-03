@@ -2,12 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { Stack, useRouter, usePathname } from 'expo-router';
 import { supabase } from '../supabase';
 import { View, TouchableOpacity } from 'react-native';
-import { Text } from 'react-native-paper';
 import { ChevronLeft } from 'lucide-react-native';
+import Breadcrumbs from '../components/Breadcrumbs';
 
 export default function RootLayout() {
   const router = useRouter();
-  const pathname = usePathname(); // Get current route
+  const pathname = usePathname();
   const [didInitialRender, setDidInitialRender] = useState(false);
 
   useEffect(() => {
@@ -19,73 +19,78 @@ export default function RootLayout() {
 
     const checkUser = async () => {
       const { data, error } = await supabase.auth.getUser();
-      if (error) console.error('Error getting user:', error);
 
-      if (data?.user) {
-        router.replace('/dashboard'); // Redirect logged-in users
+      // Ignore the expected "Auth session missing!" error in Expo Go.
+      if (error && error.message !== 'Auth session missing!') {
+        console.error('Error getting user:', error);
+      }
+
+      if (!data?.user) {
+        router.replace('/login' as any);
       } else {
-        router.replace('/login'); // Redirect guests
+        if (pathname === '/login' || pathname === '/signup' || pathname === '/') {
+          router.replace('/dashboard' as any);
+        }
       }
     };
 
     checkUser();
-  }, [didInitialRender]);
+  }, [didInitialRender, pathname]);
 
-  // **Breadcrumb Logic**
+  // Friendly names for route segments.
   const routeNames: Record<string, string> = {
     dashboard: 'Dashboard',
     profile: 'Profile',
     settings: 'Settings',
     login: 'Login',
     signup: 'Sign Up',
+    'edit-profile': 'Edit Profile',
   };
 
-  const segments = pathname.split('/').filter(Boolean); // Remove empty segments
-  const breadcrumbs = segments.map((segment, index) => {
-    const path = '/' + segments.slice(0, index + 1).join('/');
-    const label = routeNames[segment] || segment.replace(/-/g, ' ').toUpperCase();
+  // Split the current pathname into segments and build an array for breadcrumbs.
+  const segments = pathname.split('/').filter(Boolean);
+  const breadcrumbPaths = segments.map((segment, index) => ({
+    name: routeNames[segment] || segment.replace(/-/g, ' ').toUpperCase(),
+    path: '/' + segments.slice(0, index + 1).join('/'),
+  }));
 
-    return (
-      <View key={index} className="flex-row items-center">
-        <TouchableOpacity onPress={() => router.push(path as any)}>
-          <Text variant="titleMedium" className="text-blue-500">{label}</Text>
-        </TouchableOpacity>
-
-        {/* Add separator except for the last segment */}
-        {index < segments.length - 1 && (
-          <Text className="mx-2 text-gray-500">{'>'}</Text>
-        )}
-      </View>
-    );
-  });
+  const handleGoBack = () => {
+    if (segments.length > 0) {
+      router.back();
+    } else {
+      router.push('/dashboard' as any);
+    }
+  };
 
   return (
-    <View className="flex-1">
-      {/* Breadcrumb Navigation Bar */}
-      <View className="flex-row items-center p-4 bg-gray-200" style={{ boxShadow: '0px 2px 4px rgba(0,0,0,0.2)', pointerEvents: 'auto' }}>
-        {/* Back Button */}
+    <View style={{ flex: 1 }}>
+      {/* Navigation Bar with Back Button and Breadcrumbs */}
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          padding: 16,
+          backgroundColor: '#E5E7EB',
+          boxShadow: '0px 2px 4px rgba(0,0,0,0.2)',
+          pointerEvents: 'auto',
+        }}
+      >
         {segments.length > 0 && (
-          <TouchableOpacity onPress={() => router.back()} className="mr-2">
+          <TouchableOpacity onPress={handleGoBack} style={{ marginRight: 8 }}>
             <ChevronLeft size={24} color="black" />
           </TouchableOpacity>
         )}
-
-        {/* Breadcrumbs Navigation */}
-        {breadcrumbs.length > 0 ? (
-          <View className="flex-row items-center">{breadcrumbs}</View>
-        ) : (
-          <Text variant="titleMedium">HOME</Text>
-        )}
+        <Breadcrumbs paths={breadcrumbPaths} />
       </View>
 
-      {/* Page Content */}
+      {/* App Screens */}
       <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="index" options={{ title: "Home" }} />
-      <Stack.Screen name="login" />
-      <Stack.Screen name="signup" />
-      <Stack.Screen name="dashboard" />
-      <Stack.Screen name="profile" />
-      <Stack.Screen name="edit-profile" />
+        <Stack.Screen name="index" options={{ title: 'Home' }} />
+        <Stack.Screen name="login" options={{ title: '' }} />
+        <Stack.Screen name="signup" options={{ title: '' }} />
+        <Stack.Screen name="dashboard" options={{ title: '' }} />
+        <Stack.Screen name="profile" options={{ title: '' }} />
+        <Stack.Screen name="edit-profile" options={{ title: '' }} />
       </Stack>
     </View>
   );

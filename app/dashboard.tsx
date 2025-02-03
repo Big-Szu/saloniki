@@ -11,47 +11,54 @@ interface User {
 
 export default function DashboardScreen() {
   const router = useRouter();
-  const [user, setUser] = useState<User | null>(null); // Fix TypeScript error
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchUser = async () => {
-      const { data } = await supabase.auth.getUser();
+      const { data, error } = await supabase.auth.getUser();
+      if (error) {
+        console.error('Error getting user:', error);
+        router.replace('/login');
+        return;
+      }
       if (data?.user) {
-        setUser({ id: data.user.id, email: data.user.email || '' }); // Ensure email is defined
+        setUser({ id: data.user.id, email: data.user.email || '' });
+      } else {
+        router.replace('/login');
       }
       setLoading(false);
     };
     fetchUser();
-  }, []);
+  }, [router]);
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    router.replace('/login'); // Redirect back to login
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.error('Error during logout:', error);
+    }
+    router.replace('/login');
   };
 
   if (loading) {
     return (
-      <View className="flex-1 justify-center items-center bg-gray-100">
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F3F4F6' }}>
         <ActivityIndicator size="large" />
       </View>
     );
   }
 
   return (
-    <View className="flex-1 justify-center items-center bg-gray-100 p-6">
-      <Card className="w-80 p-5">
-        <Text variant="titleLarge" className="text-center mb-4">Dashboard</Text>
-
-        <Text className="text-lg text-center">
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F3F4F6', padding: 24 }}>
+      <Card style={{ width: 320, padding: 20 }}>
+        <Text variant="titleLarge" style={{ textAlign: 'center', marginBottom: 16 }}>Dashboard</Text>
+        <Text style={{ textAlign: 'center', fontSize: 16 }}>
           Welcome, {user?.email || 'Guest'}!
         </Text>
-
-        <Button mode="contained" className="mt-4 bg-blue-500" onPress={() => router.push('/profile')}>
+        <Button mode="contained" style={{ marginTop: 16, backgroundColor: '#3B82F6' }} onPress={() => router.push('/profile')}>
           View Profile
         </Button>
-
-        <Button mode="contained" className="mt-4 bg-red-500" onPress={handleLogout}>
+        <Button mode="contained" style={{ marginTop: 16, backgroundColor: '#EF4444' }} onPress={handleLogout}>
           Logout
         </Button>
       </Card>

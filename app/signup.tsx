@@ -15,37 +15,33 @@ export default function SignupScreen() {
       Alert.alert('Sign-up Error', error.message);
     } else {
       Alert.alert('Success', 'Check your email for a confirmation link!');
-      router.replace('/login'); // Redirect back to login
+      router.replace('/login');
     }
   };
 
   return (
-    <View className="flex-1 justify-center items-center bg-gray-100 p-6">
-      <Card className="w-80 p-5">
-        <Text variant="titleLarge" className="text-center mb-4">Create an Account</Text>
-
-        <TextInput 
-          label="Email" 
-          value={email} 
-          onChangeText={setEmail} 
-          mode="outlined" 
-          className="mb-2"
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F3F4F6', padding: 24 }}>
+      <Card style={{ width: 320, padding: 20 }}>
+        <Text variant="titleLarge" style={{ textAlign: 'center', marginBottom: 16 }}>Create an Account</Text>
+        <TextInput
+          label="Email"
+          value={email}
+          onChangeText={setEmail}
+          mode="outlined"
+          style={{ marginBottom: 8 }}
         />
-
-        <TextInput 
-          label="Password" 
-          value={password} 
-          onChangeText={setPassword} 
-          secureTextEntry 
-          mode="outlined" 
-          className="mb-2"
+        <TextInput
+          label="Password"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+          mode="outlined"
+          style={{ marginBottom: 8 }}
         />
-
-        <Button mode="contained" className="mt-4 bg-blue-500" onPress={handleSignUp}>
+        <Button mode="contained" style={{ marginTop: 16, backgroundColor: '#3B82F6' }} onPress={handleSignUp}>
           Sign Up
         </Button>
-
-        <Button mode="text" className="mt-2" onPress={() => router.replace('/login')}>
+        <Button mode="text" style={{ marginTop: 8 }} onPress={() => router.replace('/login')}>
           Back to Login
         </Button>
       </Card>

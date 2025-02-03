@@ -1,44 +1,55 @@
-import { View, Text, Button } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { supabase } from '../supabase'; // Ensure this file is correctly set up
-import Breadcrumbs from '../components/Breadcrumbs'; // Ensure this component exists
+import { supabase } from '../supabase';
+import { Text, Button } from 'react-native-paper';
+import Breadcrumbs from '../components/Breadcrumbs';
 
 export default function ProfileScreen() {
   const router = useRouter();
   const [user, setUser] = useState<{ name: string; email: string } | null>(null);
 
   useEffect(() => {
-    // Fetch user data
     async function fetchUser() {
       const { data, error } = await supabase.auth.getUser();
       if (error) {
         console.error('Error fetching user:', error);
+        Alert.alert('Error', 'Failed to fetch user.');
+        router.replace('/login');
+        return;
+      }
+      if (data?.user) {
+        setUser({
+          name: data.user.user_metadata?.full_name || 'N/A',
+          email: data.user.email || 'N/A',
+        });
       } else {
-        setUser({ name: data.user?.user_metadata.full_name || 'N/A', email: data.user?.email || 'N/A' });
+        router.replace('/login');
       }
     }
     fetchUser();
-  }, []);
+  }, [router]);
 
   return (
-    <View className="flex-1 p-4">
-      {/* Breadcrumbs */}
-      <Breadcrumbs path={['Dashboard', 'Profile']} />
-
-      {/* User Info */}
-      <Text className="text-xl font-bold mb-2">Profile</Text>
+    <View style={{ flex: 1, padding: 16 }}>
+      <Breadcrumbs
+        paths={[
+          { name: 'Dashboard', path: '/dashboard' },
+          { name: 'Profile', path: '/profile' },
+        ]}
+      />
+      <Text style={{ fontSize: 20, fontWeight: 'bold', marginBottom: 8 }}>Profile</Text>
       {user ? (
         <View>
-          <Text className="text-lg">Name: {user.name}</Text>
-          <Text className="text-lg">Email: {user.email}</Text>
+          <Text style={{ fontSize: 16 }}>Name: {user.name}</Text>
+          <Text style={{ fontSize: 16 }}>Email: {user.email}</Text>
         </View>
       ) : (
         <Text>Loading...</Text>
       )}
-
-      {/* Edit Profile Button */}
-      <Button title="Edit Profile" onPress={() => router.push('/edit-profile')} />
+      <Button mode="contained" style={{ marginTop: 16, backgroundColor: '#2563EB' }} onPress={() => router.push('/edit-profile')}>
+        Edit Profile
+      </Button>
     </View>
   );
 }

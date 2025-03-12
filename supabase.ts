@@ -180,8 +180,6 @@ export async function getAllCarModels() {
   return data;
 }
 
-// ... existing supabase.ts code ...
-
 // Workshop Profile Helpers
 
 export async function getWorkshopProfile() {
@@ -194,7 +192,7 @@ export async function getWorkshopProfile() {
     .from('workshops')
     .select('*')
     .eq('id', userData.user.id)
-    .single();
+    .maybeSingle();
   if (error) {
     console.error('Error fetching workshop profile:', error);
     return null;
@@ -202,7 +200,19 @@ export async function getWorkshopProfile() {
   return data;
 }
 
-export async function createWorkshopProfile(workshopData: { logo?: string; name: string; address?: string; phone?: string; webpage?: string; }) {
+
+// In supabase.ts
+
+export async function createWorkshopProfile(workshopData: {
+  logo?: string;
+  name: string;
+  street_address: string;
+  city: string;
+  postal_code: string;
+  country?: string;  // defaults to 'Poland' if not provided
+  phone: string;
+  webpage?: string;
+}) {
   const { data: userData, error: userError } = await supabase.auth.getUser();
   if (userError || !userData?.user) {
     return { error: userError || 'User not authenticated' };
@@ -210,9 +220,10 @@ export async function createWorkshopProfile(workshopData: { logo?: string; name:
   const { data, error } = await supabase
     .from('workshops')
     .insert([{ ...workshopData, id: userData.user.id }])
-    .single();
+    .maybeSingle();
   return { data, error };
 }
+
 
 export async function updateWorkshopProfile(workshopData: { logo?: string; name?: string; address?: string; phone?: string; webpage?: string; }) {
   const { data: userData, error: userError } = await supabase.auth.getUser();
@@ -225,4 +236,18 @@ export async function updateWorkshopProfile(workshopData: { logo?: string; name?
     .eq('id', userData.user.id)
     .single();
   return { data, error };
+}
+
+export async function getRepairsForCarPaginated(carId: string, limit: number, offset: number) {
+  const { data, error } = await supabase
+    .from('repairs')
+    .select('*')
+    .eq('car_id', carId)
+    .order('repair_date', { ascending: false })
+    .range(offset, offset + limit - 1);
+  if (error) {
+    console.error(error);
+    return [];
+  }
+  return data;
 }

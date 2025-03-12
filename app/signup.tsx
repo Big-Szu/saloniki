@@ -1,79 +1,33 @@
 import React, { useState } from 'react';
 import { View, Alert } from 'react-native';
+import { TextInput, Button, Text, Card } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import { supabase } from '../supabase';
-import { TextInput, Button, Text, Card } from 'react-native-paper';
 
 export default function SignupScreen() {
   const router = useRouter();
-  const [name, setName] = useState(''); // User-specified name
+  const [name, setName] = useState('');  // New field
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
   const handleSignUp = async () => {
-    // Attempt to sign up while setting the auth metadata (full_name) via options.
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          full_name: name, // Set the display name in auth metadata.
-        },
-      },
+    // Pass name as auth metadata (and optionally create a profile row later)
+    const { data, error } = await supabase.auth.signUp({ 
+      email, 
+      password, 
+      options: { data: { full_name: name } } 
     });
-
     if (error) {
       Alert.alert('Sign-up Error', error.message);
       return;
     }
-
-    // Determine the profile name: use the entered name if provided,
-    // or fallback to the full_name from the auth metadata (if available).
-    const profileName =
-      name.trim() !== '' ? name.trim() : data.user?.user_metadata?.full_name || '';
-
-    // Function to insert a profile row.
-    const insertProfile = async (user: any) => {
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert({ id: user.id, name: profileName, email })
-        .single();
-      if (profileError) {
-        console.error('Error creating profile:', profileError);
-        Alert.alert('Error', 'Failed to create user profile.');
-      }
-    };
-
-    if (data.user) {
-      // If the user is immediately available, insert the profile row.
-      await insertProfile(data.user);
-    } else {
-      // Otherwise (e.g. when email confirmation is enabled), subscribe to auth state changes.
-      const { data: authListener } = supabase.auth.onAuthStateChange(
-        async (event, session) => {
-          if (session?.user) {
-            await insertProfile(session.user);
-            authListener.subscription.unsubscribe();
-          }
-        }
-      );
-    }
-
     Alert.alert('Success', 'Check your email for a confirmation link!');
     router.replace('/login' as any);
   };
 
   return (
-    <View
-      style={{
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: '#F3F4F6',
-        padding: 24,
-      }}
-    >
-      <Card style={{ width: 320, padding: 20 }}>
+    <View style={{ flex: 1, padding: 16, justifyContent: 'center' }}>
+      <Card style={{ padding: 16 }}>
         <Text variant="titleLarge" style={{ textAlign: 'center', marginBottom: 16 }}>
           Create an Account
         </Text>
@@ -113,6 +67,12 @@ export default function SignupScreen() {
         >
           Back to Login
         </Button>
+        <View style={{ marginTop: 16, alignItems: 'center' }}>
+          <Text>Want to sign up as a workshop?</Text>
+          <Button mode="text" onPress={() => router.push('/workshops/signup' as any)}>
+            Sign Up as Workshop
+          </Button>
+        </View>
       </Card>
     </View>
   );

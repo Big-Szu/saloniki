@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Text, Button } from 'react-native-paper';
-import Breadcrumbs from '@/components/common/Breadcrumbs';
+import { Breadcrumbs } from '@/components/common/Breadcrumbs';
 import { getUserProfile } from '@/services/supabase/client';
 
 export default function ProfileScreen() {

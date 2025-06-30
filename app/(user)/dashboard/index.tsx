@@ -3,7 +3,7 @@ import { View, FlatList, TouchableOpacity, ActivityIndicator } from 'react-nativ
 import { Text, Button, Card } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import { getUserProfile, getCarsForUser, getCarMakes, getAllCarModels, supabase } from '@/services/supabase/client';
-import Breadcrumbs from '@/components/common/Breadcrumbs';
+import { Breadcrumbs } from '@/components/common/Breadcrumbs';
 
 export default function DashboardScreen() {
   const router = useRouter();

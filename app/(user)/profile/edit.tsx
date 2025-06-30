@@ -3,7 +3,7 @@ import { View, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Text, Button, TextInput } from 'react-native-paper';
 import { Breadcrumbs } from '@/components/common/Breadcrumbs';
-import { getUserProfile, updateUserProfile } from '@/services/supabase/client';
+import { getUserProfile, updateUserProfile } from '@/services/api/auth';
 
 export default function EditProfileScreen() {
   const router = useRouter();

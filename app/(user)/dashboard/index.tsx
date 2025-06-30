@@ -1,8 +1,11 @@
+// app/(user)/dashboard/index.tsx
 import React, { useEffect, useState } from 'react';
 import { View, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Text, Button, Card } from 'react-native-paper';
 import { useRouter } from 'expo-router';
-import { getUserProfile, getCarsForUser, getCarMakes, getAllCarModels, supabase } from '@/services/supabase/client';
+import { supabase } from '@/services/supabase/client';
+import { getUserProfile } from '@/services/api/auth';
+import { getCarsForUser, getCarMakes, getAllCarModels } from '@/services/api/cars';
 import { Breadcrumbs } from '@/components/common/Breadcrumbs';
 
 export default function DashboardScreen() {
@@ -15,19 +18,23 @@ export default function DashboardScreen() {
 
   useEffect(() => {
     async function fetchData() {
-      const profileData = await getUserProfile();
-      setProfile(profileData);
+      try {
+        const profileData = await getUserProfile();
+        setProfile(profileData);
 
-      const carsData = await getCarsForUser();
-      setCars(carsData);
+        const carsData = await getCarsForUser();
+        setCars(carsData);
 
-      const makesData = await getCarMakes();
-      setMakes(makesData);
+        const makesData = await getCarMakes();
+        setMakes(makesData);
 
-      const modelsData = await getAllCarModels();
-      setModels(modelsData);
-
-      setLoading(false);
+        const modelsData = await getAllCarModels();
+        setModels(modelsData);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      } finally {
+        setLoading(false);
+      }
     }
     fetchData();
   }, []);
@@ -45,7 +52,7 @@ export default function DashboardScreen() {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    router.replace('/login' as any);
+    router.replace('/login');
   };
 
   if (loading) {
@@ -66,7 +73,7 @@ export default function DashboardScreen() {
         <View style={{ flexDirection: 'row', marginTop: 8 }}>
           <Button
             mode="contained"
-            onPress={() => router.push('/profile' as any)}
+            onPress={() => router.push('/profile')}
             style={{ marginRight: 8 }}
           >
             View Profile
@@ -86,7 +93,7 @@ export default function DashboardScreen() {
       {/* Add New Car Button */}
       <Button
         mode="contained"
-        onPress={() => router.push('/cars/new' as any)}
+        onPress={() => router.push('/cars/new')}
         style={{ marginVertical: 16 }}
       >
         Add New Car
@@ -94,19 +101,25 @@ export default function DashboardScreen() {
 
       {/* Cars List */}
       {cars.length === 0 ? (
-        <Text>No vehicles found.</Text>
+        <Card style={{ padding: 16 }}>
+          <Text>No cars yet. Add your first car!</Text>
+        </Card>
       ) : (
         <FlatList
           data={cars}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
-            <TouchableOpacity onPress={() => router.push(`/cars/${item.id}` as any)}>
-              <Card style={{ marginBottom: 12, padding: 12 }}>
-                <Text style={{ fontSize: 18, fontWeight: 'bold' }}>
-                  {makeMap[item.make_id] || 'Unknown Make'}, {modelMap[item.model_id] || 'Unknown Model'}
-                </Text>
-                <Text>Year: {item.year}</Text>
-                <Text>Engine: {item.engine}</Text>
+            <TouchableOpacity
+              onPress={() => router.push(`/cars/${item.id}`)}
+            >
+              <Card style={{ marginBottom: 8 }}>
+                <Card.Content>
+                  <Text variant="titleMedium">
+                    {makeMap[item.make_id] || 'Unknown'} {modelMap[item.model_id] || 'Unknown'}
+                  </Text>
+                  <Text>Year: {item.year}</Text>
+                  <Text>Engine: {item.engine}</Text>
+                </Card.Content>
               </Card>
             </TouchableOpacity>
           )}

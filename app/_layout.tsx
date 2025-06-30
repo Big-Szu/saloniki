@@ -1,55 +1,67 @@
 import React, { useEffect } from 'react';
 import { View } from 'react-native';
 import { Slot, useRouter, usePathname } from 'expo-router';
-import { supabase, getWorkshopProfile } from '../supabase';
+import { PaperProvider } from 'react-native-paper';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { ErrorBoundary } from '@/components/common/ErrorBoundary';
+import { supabase } from '@/services/supabase/client';
+import { useAuthStore } from '@/stores/auth.store';
 
 function AuthChecker() {
   const router = useRouter();
   const pathname = usePathname();
+  const { setUser } = useAuthStore();
 
   useEffect(() => {
     async function checkUser() {
-      // Get the authenticated user
       const { data, error } = await supabase.auth.getUser();
       
-      // Treat the "Auth session missing!" error as no user.
       const noUser = !data?.user || (error && error.message === "Auth session missing!");
-
-      // Allowed routes for unauthenticated users
-      const allowedRoutes = ['/login', '/signup', '/workshops/signup'];
+      const allowedRoutes = ['/(auth)/login', '/(auth)/signup', '/(auth)/forgot-password', '/workshops/signup'];
 
       if (noUser) {
-        // If there is no user and we're not on an allowed route, redirect to /login
-        if (!allowedRoutes.includes(pathname)) {
-          setTimeout(() => router.replace('/login' as any), 0);
+        if (!allowedRoutes.some(route => pathname.startsWith(route))) {
+          setTimeout(() => router.replace('/(auth)/login'), 0);
         }
       } else {
-        // A user is logged in; check if they have a workshop profile.
-        const workshop = await getWorkshopProfile();
+        setUser(data.user);
+        
+        // Check if user is a workshop
+        const { data: workshop } = await supabase
+          .from('workshops')
+          .select('id')
+          .eq('id', data.user.id)
+          .maybeSingle();
+          
         if (workshop) {
-          // If they have a workshop profile and are not already on a workshop route, redirect them.
-          if (pathname !== '/workshops/dashboard' && !pathname.startsWith('/workshops')) {
-            setTimeout(() => router.replace('/workshops/dashboard' as any), 0);
+          if (!pathname.startsWith('/(workshop)')) {
+            setTimeout(() => router.replace('/(workshop)/dashboard'), 0);
           }
         } else {
-          // Regular user logged in: if they’re on a route meant for non-logged in users, redirect to dashboard.
-          if (allowedRoutes.includes(pathname) || pathname === '/') {
-            setTimeout(() => router.replace('/dashboard' as any), 0);
+          if (allowedRoutes.some(route => pathname.startsWith(route)) || pathname === '/') {
+            setTimeout(() => router.replace('/(user)/dashboard'), 0);
           }
         }
       }
     }
+    
     checkUser();
-  }, [pathname, router]);
+  }, [pathname, router, setUser]);
 
   return null;
 }
 
 export default function RootLayout() {
   return (
-    <View style={{ flex: 1 }}>
-      <AuthChecker />
-      <Slot />
-    </View>
+    <SafeAreaProvider>
+      <PaperProvider>
+        <ErrorBoundary>
+          <View style={{ flex: 1 }}>
+            <AuthChecker />
+            <Slot />
+          </View>
+        </ErrorBoundary>
+      </PaperProvider>
+    </SafeAreaProvider>
   );
 }

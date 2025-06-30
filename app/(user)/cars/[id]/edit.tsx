@@ -3,7 +3,7 @@ import { View, Alert } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { TextInput, Button, Text, Card } from 'react-native-paper';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { getCarById, updateCar, getCarMakes, getCarModelsForMake } from '@/services/supabase/client';
+import { supabase } from '@/services/supabase/client';
 import Breadcrumbs from '@/components/common/Breadcrumbs';
 
 export default function EditCarScreen() {
@@ -21,7 +21,12 @@ export default function EditCarScreen() {
 
   useEffect(() => {
     async function fetchCarDetails() {
-      const car = await getCarById(id as string);
+      const { data: car, error } = await supabase
+        .from('cars')
+        .select('*')
+        .eq('id', id)
+        .single();
+        
       if (car) {
         setYear(car.year ? car.year.toString() : '');
         setEngine(car.engine || '');
@@ -31,7 +36,7 @@ export default function EditCarScreen() {
         setSelectedModel(car.model_id);
       } else {
         Alert.alert('Error', 'Car not found.');
-        router.push('/cars' as any);
+        router.push('/cars');
       }
       setLoading(false);
     }
@@ -40,8 +45,11 @@ export default function EditCarScreen() {
 
   useEffect(() => {
     async function fetchMakes() {
-      const makesData = await getCarMakes();
-      setMakes(makesData);
+      const { data: makesData } = await supabase
+        .from('car_makes')
+        .select('*')
+        .order('name');
+      if (makesData) setMakes(makesData);
     }
     fetchMakes();
   }, []);
@@ -49,8 +57,12 @@ export default function EditCarScreen() {
   useEffect(() => {
     async function fetchModels() {
       if (selectedMake !== null) {
-        const modelsData = await getCarModelsForMake(selectedMake);
-        setModels(modelsData);
+        const { data: modelsData } = await supabase
+          .from('car_models')
+          .select('*')
+          .eq('make_id', selectedMake)
+          .order('name');
+        if (modelsData) setModels(modelsData);
       }
     }
     fetchModels();
@@ -67,19 +79,24 @@ export default function EditCarScreen() {
       Alert.alert('Error', `Year must be between 1800 and ${currentYear}.`);
       return;
     }
-    const { error } = await updateCar(id as string, { 
-      make_id: selectedMake, 
-      model_id: selectedModel, 
-      year: yearNumber, 
-      engine: engine.trim(), 
-      vin: vin.trim(), 
-      color: color.trim() 
-    });
+    
+    const { error } = await supabase
+      .from('cars')
+      .update({ 
+        make_id: selectedMake, 
+        model_id: selectedModel, 
+        year: yearNumber, 
+        engine: engine.trim(), 
+        vin: vin.trim(), 
+        color: color.trim() 
+      })
+      .eq('id', id);
+      
     if (error) {
       Alert.alert('Error', 'Failed to update car: ' + error.message);
     } else {
       Alert.alert('Success', 'Car updated.');
-      router.push(`/cars/${id}` as any);
+      router.push(`/cars/${id}`);
     }
   };
 
@@ -96,7 +113,7 @@ export default function EditCarScreen() {
       <Breadcrumbs paths={[
         { name: 'Dashboard', path: '/dashboard' },
         { name: 'Cars', path: '/cars' },
-        { name: 'Edit Car', path: `/cars/edit/${id}` }
+        { name: 'Edit Car', path: `/cars/${id}/edit` }
       ]} />
       <Card style={{ padding: 16 }}>
         <Text variant="titleLarge" style={{ marginBottom: 16 }}>Edit Car</Text>
@@ -106,6 +123,7 @@ export default function EditCarScreen() {
           onValueChange={(itemValue) => setSelectedMake(itemValue)}
           style={{ marginBottom: 8 }}
         >
+          <Picker.Item label="Select a make" value={null} />
           {makes.map((make) => (
             <Picker.Item key={make.id} label={make.name} value={make.id} />
           ))}
@@ -116,6 +134,7 @@ export default function EditCarScreen() {
           onValueChange={(itemValue) => setSelectedModel(itemValue)}
           style={{ marginBottom: 8 }}
         >
+          <Picker.Item label="Select a model" value={null} />
           {models.map((model) => (
             <Picker.Item key={model.id} label={model.name} value={model.id} />
           ))}

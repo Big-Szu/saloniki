@@ -1,8 +1,11 @@
+// File: app/(user)/cars/[id]/index.tsx
+// Complete fixed file with correct imports and supabase usage:
+
 import React, { useEffect, useState } from 'react';
-import { View, ActivityIndicator, FlatList, TouchableOpacity, Image } from 'react-native';
+import { View, ActivityIndicator, FlatList, TouchableOpacity, Image, Alert } from 'react-native';
 import { Text, Button, Card } from 'react-native-paper';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { getCarById, getRepairsForCarPaginated, getCarMakes, getCarModelsForMake, deleteCar } from '@/services/supabase/client';
+import { supabase } from '@/services/supabase/client';
 import Breadcrumbs from '@/components/common/Breadcrumbs';
 
 export default function CarDetailScreen() {
@@ -20,22 +23,46 @@ export default function CarDetailScreen() {
 
   useEffect(() => {
     async function fetchCar() {
-      const carData = await getCarById(id as string);
+      // Get car details
+      const { data: carData, error: carError } = await supabase
+        .from('cars')
+        .select('*')
+        .eq('id', id)
+        .single();
+        
       if (carData) {
         setCar(carData);
+        
         // Get make and logo
-        const makes = await getCarMakes();
-        const make = makes.find((m: any) => m.id === carData.make_id);
+        const { data: makes } = await supabase
+          .from('car_makes')
+          .select('*');
+        const make = makes?.find((m: any) => m.id === carData.make_id);
         setMakeName(make ? make.name : '');
         setMakeLogo(make ? make.logo : '');
-        // Get model name using the selected make
-        const models = await getCarModelsForMake(carData.make_id);
-        const model = models.find((m: any) => m.id === carData.model_id);
+        
+        // Get model name
+        const { data: models } = await supabase
+          .from('car_models')
+          .select('*')
+          .eq('make_id', carData.make_id);
+        const model = models?.find((m: any) => m.id === carData.model_id);
         setModelName(model ? model.name : '');
       }
-      const initialRepairs = await getRepairsForCarPaginated(id as string, repairsPerPage, 0);
-      setRepairs(initialRepairs);
-      setHasMoreRepairs(initialRepairs.length === repairsPerPage);
+      
+      // Get repairs
+      const { data: initialRepairs } = await supabase
+        .from('repairs')
+        .select('*')
+        .eq('car_id', id)
+        .order('repair_date', { ascending: false })
+        .limit(repairsPerPage)
+        .range(0, repairsPerPage - 1);
+        
+      if (initialRepairs) {
+        setRepairs(initialRepairs);
+        setHasMoreRepairs(initialRepairs.length === repairsPerPage);
+      }
       setLoading(false);
     }
     fetchCar();
@@ -43,21 +70,46 @@ export default function CarDetailScreen() {
 
   const loadMoreRepairs = async () => {
     const newOffset = (repairsPage + 1) * repairsPerPage;
-    const moreRepairs = await getRepairsForCarPaginated(id as string, repairsPerPage, newOffset);
-    setRepairs(prev => [...prev, ...moreRepairs]);
-    setRepairsPage(repairsPage + 1);
-    if (moreRepairs.length < repairsPerPage) {
-      setHasMoreRepairs(false);
+    const { data: moreRepairs } = await supabase
+      .from('repairs')
+      .select('*')
+      .eq('car_id', id)
+      .order('repair_date', { ascending: false })
+      .range(newOffset, newOffset + repairsPerPage - 1);
+      
+    if (moreRepairs) {
+      setRepairs(prev => [...prev, ...moreRepairs]);
+      setRepairsPage(repairsPage + 1);
+      if (moreRepairs.length < repairsPerPage) {
+        setHasMoreRepairs(false);
+      }
     }
   };
 
   const handleDelete = async () => {
-    const { error } = await deleteCar(id as string);
-    if (error) {
-      alert('Error deleting car: ' + error.message);
-    } else {
-      router.push('/cars' as any);
-    }
+    Alert.alert(
+      'Delete Car',
+      'Are you sure you want to delete this car? This will also delete all associated repairs.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            const { error } = await supabase
+              .from('cars')
+              .delete()
+              .eq('id', id);
+              
+            if (error) {
+              Alert.alert('Error', 'Failed to delete car: ' + error.message);
+            } else {
+              router.push('/cars');
+            }
+          }
+        }
+      ]
+    );
   };
 
   if (loading) {
@@ -90,7 +142,7 @@ export default function CarDetailScreen() {
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <View style={{ flex: 1 }}>
             <Text variant="titleLarge" style={{ fontWeight: 'bold' }}>
-              {makeName}, {modelName}
+              {makeName} {modelName}
             </Text>
           </View>
           {makeLogo ? (
@@ -104,14 +156,14 @@ export default function CarDetailScreen() {
       </Card>
       <Button
         mode="contained"
-        onPress={() => router.push(`/cars/edit/${id}` as any)}
+        onPress={() => router.push(`/cars/${id}/edit`)}
         style={{ marginBottom: 16 }}
       >
         Edit Car
       </Button>
       <Button
         mode="contained"
-        onPress={() => router.push(`/cars/${id}/repairs/new` as any)}
+        onPress={() => router.push(`/cars/${id}/repairs/new`)}
         style={{ marginBottom: 16, backgroundColor: '#3B82F6' }}
       >
         Add Repair
@@ -138,14 +190,15 @@ export default function CarDetailScreen() {
     </View>
   );
 
-  // Render each repair item (minimal view: date, cost with currency, confirmed marker)
+  // Render each repair item
   const renderRepairItem = ({ item }: { item: any }) => (
-    <TouchableOpacity onPress={() => router.push(`/cars/${id}/repairs/${item.id}` as any)}>
+    <TouchableOpacity onPress={() => router.push(`/cars/${id}/repairs/${item.id}`)}>
       <View
         style={{
           flexDirection: 'row',
           justifyContent: 'space-between',
           paddingVertical: 8,
+          paddingHorizontal: 16,
           borderBottomWidth: 1,
           borderColor: '#ccc'
         }}
@@ -155,7 +208,7 @@ export default function CarDetailScreen() {
           {item.cost} {item.currency}
         </Text>
         <Text style={{ flex: 1, textAlign: 'right' }}>
-          {item.confirmed ? '★' : '☆'}
+          {item.confirmed ? '✓' : '○'}
         </Text>
       </View>
     </TouchableOpacity>

@@ -1,3 +1,4 @@
+// services/supabase/client.ts
 import { createClient } from '@supabase/supabase-js';
 import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
@@ -14,23 +15,42 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
 // Custom storage for React Native
 const ExpoSecureStoreAdapter = {
   getItem: async (key: string) => {
-    if (Platform.OS === 'web') {
+    // Check if we're in a browser environment
+    if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
       return localStorage.getItem(key);
     }
-    return SecureStore.getItemAsync(key);
+    // For SSR or native, use SecureStore
+    try {
+      return await SecureStore.getItemAsync(key);
+    } catch (error) {
+      // SecureStore might not be available during SSR
+      return null;
+    }
   },
   setItem: async (key: string, value: string) => {
-    if (Platform.OS === 'web') {
+    // Check if we're in a browser environment
+    if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
       localStorage.setItem(key, value);
     } else {
-      await SecureStore.setItemAsync(key, value);
+      try {
+        await SecureStore.setItemAsync(key, value);
+      } catch (error) {
+        // SecureStore might not be available during SSR
+        console.warn('Unable to set item in secure storage:', error);
+      }
     }
   },
   removeItem: async (key: string) => {
-    if (Platform.OS === 'web') {
+    // Check if we're in a browser environment
+    if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
       localStorage.removeItem(key);
     } else {
-      await SecureStore.deleteItemAsync(key);
+      try {
+        await SecureStore.deleteItemAsync(key);
+      } catch (error) {
+        // SecureStore might not be available during SSR
+        console.warn('Unable to remove item from secure storage:', error);
+      }
     }
   },
 };

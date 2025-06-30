@@ -4,7 +4,7 @@ import { Text, Button, Card, FAB } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import { supabase } from '@/services/supabase/client';
 import { Car, CarMake, CarModel } from '@/types';
-import { CarCard } from './_components/CarCard';
+import { CarCard } from '@/components/cars/CarCard';
 
 export default function CarsListScreen() {
   const router = useRouter();

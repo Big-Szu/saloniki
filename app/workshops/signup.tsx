@@ -41,10 +41,16 @@ export default function WorkshopSignupScreen() {
     setLoading(true);
     
     try {
-      // Step 1: Create auth user
+      // Step 1: Create auth user with autoconfirm disabled
       const { data: authData, error: authError } = await supabase.auth.signUp({ 
         email: email.trim(), 
-        password: password.trim()
+        password: password.trim(),
+        options: {
+          data: {
+            user_type: 'workshop',
+            workshop_name: workshopName.trim()
+          }
+        }
       });
       
       if (authError) {
@@ -54,12 +60,38 @@ export default function WorkshopSignupScreen() {
       if (!authData.user) {
         throw new Error('Failed to create user account');
       }
-      
-      // Step 2: Create workshop profile
-      const { error: workshopError } = await supabase
-        .from('workshops')
-        .insert({
-          id: authData.user.id,
+
+      // Step 2: If the user is auto-confirmed (in development), sign them in to get proper auth
+      if (authData.session) {
+        // User was auto-confirmed, we can create the workshop profile now
+        const { error: workshopError } = await supabase
+          .from('workshops')
+          .insert({
+            id: authData.user.id,
+            name: workshopName.trim(),
+            street_address: streetAddress.trim(),
+            city: city.trim(),
+            postal_code: postalCode.trim(),
+            country: country.trim(),
+            phone: phone.trim(),
+            logo: logo.trim() || null,
+            webpage: webpage.trim() || null
+          });
+          
+        if (workshopError) {
+          console.error('Workshop creation error:', workshopError);
+          throw new Error(`Failed to create workshop profile: ${workshopError.message}`);
+        }
+        
+        Alert.alert(
+          'Success', 
+          'Workshop account created successfully!',
+          [{ text: 'OK', onPress: () => router.replace('/(workshop)/dashboard') }]
+        );
+      } else {
+        // User needs to confirm email first
+        // Store workshop data in localStorage or state management for later
+        const workshopData = {
           name: workshopName.trim(),
           street_address: streetAddress.trim(),
           city: city.trim(),
@@ -68,21 +100,19 @@ export default function WorkshopSignupScreen() {
           phone: phone.trim(),
           logo: logo.trim() || null,
           webpage: webpage.trim() || null
-        });
+        };
         
-      if (workshopError) {
-        // If workshop creation fails, we should ideally delete the auth user
-        // but for now we'll just show an error
-        throw workshopError;
+        // You might want to store this data temporarily
+        // For now, we'll just inform the user
+        Alert.alert(
+          'Check Your Email', 
+          'Please check your email to confirm your account. After confirmation, you\'ll need to complete your workshop profile setup.',
+          [{ text: 'OK', onPress: () => router.replace('/(auth)/login') }]
+        );
       }
       
-      Alert.alert(
-        'Success', 
-        'Workshop account created! Check your email for a confirmation link.',
-        [{ text: 'OK', onPress: () => router.replace('/(auth)/login') }]
-      );
-      
     } catch (error: any) {
+      console.error('Signup error:', error);
       Alert.alert('Sign-up Error', error.message || 'An error occurred during signup');
     } finally {
       setLoading(false);

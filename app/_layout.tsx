@@ -17,7 +17,7 @@ function AuthChecker() {
       const { data, error } = await supabase.auth.getUser();
       
       const noUser = !data?.user || (error && error.message === "Auth session missing!");
-      const allowedRoutes = ['/(auth)/login', '/(auth)/signup', '/(auth)/forgot-password', '/workshops/signup'];
+      const allowedRoutes = ['/login', '/signup', '/forgot-password', '/workshops/signup'];
 
       if (noUser) {
         if (!allowedRoutes.some(route => pathname.startsWith(route))) {

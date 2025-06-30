@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { View, ActivityIndicator, FlatList, TouchableOpacity, Image } from 'react-native';
 import { Text, Button, Card } from 'react-native-paper';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { getCarById, getRepairsForCarPaginated, getCarMakes, getCarModelsForMake, deleteCar } from '../@/services/supabase/client';
-import Breadcrumbs from '../@/components/common/Breadcrumbs';
+import { getCarById, getRepairsForCarPaginated, getCarMakes, getCarModelsForMake, deleteCar } from '@/services/supabase/client';
+import Breadcrumbs from '@/components/common/Breadcrumbs';
 
 export default function CarDetailScreen() {
   const router = useRouter();

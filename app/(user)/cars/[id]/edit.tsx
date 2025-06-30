@@ -3,8 +3,8 @@ import { View, Alert } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { TextInput, Button, Text, Card } from 'react-native-paper';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { getCarById, updateCar, getCarMakes, getCarModelsForMake } from '../../@/services/supabase/client';
-import Breadcrumbs from '../../@/components/common/Breadcrumbs';
+import { getCarById, updateCar, getCarMakes, getCarModelsForMake } from '@/services/supabase/client';
+import Breadcrumbs from '@/components/common/Breadcrumbs';
 
 export default function EditCarScreen() {
   const router = useRouter();

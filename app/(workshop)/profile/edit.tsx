@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { View, Alert } from 'react-native';
 import { TextInput, Button, Text, Card } from 'react-native-paper';
 import { useRouter } from 'expo-router';
-import { getWorkshopProfile, updateWorkshopProfile } from '../@/services/supabase/client';
-import Breadcrumbs from '../@/components/common/Breadcrumbs';
+import { getWorkshopProfile, updateWorkshopProfile } from '@/services/supabase/client';
+import Breadcrumbs from '@/components/common/Breadcrumbs';
 
 export default function WorkshopEditScreen() {
   const router = useRouter();

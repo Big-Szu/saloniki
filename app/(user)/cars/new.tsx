@@ -3,8 +3,8 @@ import { View, Alert } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { TextInput, Button, Text, Card } from 'react-native-paper';
 import { useRouter } from 'expo-router';
-import { createCar, getCarMakes, getCarModelsForMake } from '../@/services/supabase/client';
-import Breadcrumbs from '../@/components/common/Breadcrumbs';
+import { createCar, getCarMakes, getCarModelsForMake } from '@/services/supabase/client';
+import Breadcrumbs from '@/components/common/Breadcrumbs';
 
 export default function NewCarScreen() {
   const router = useRouter();

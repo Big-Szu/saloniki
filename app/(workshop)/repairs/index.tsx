@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, FlatList, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { Text, Card, Button } from 'react-native-paper';
 import { useRouter } from 'expo-router';
-import { getWorkshopProfile, supabase } from '../../@/services/supabase/client';
+import { getWorkshopProfile, supabase } from '@/services/supabase/client';
 
 export default function WorkshopRepairsList() {
   const router = useRouter();

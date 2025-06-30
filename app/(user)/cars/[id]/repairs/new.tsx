@@ -4,8 +4,8 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { TextInput, Button, Text, Card } from 'react-native-paper';
 import { Picker } from '@react-native-picker/picker';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { supabase } from '../../../@/services/supabase/client';
-import Breadcrumbs from '../../../@/components/common/Breadcrumbs';
+import { supabase } from '@/services/supabase/client';
+import { Breadcrumbs } from '@/components/common/Breadcrumbs';
 
 export default function NewRepairScreen() {
   const router = useRouter();

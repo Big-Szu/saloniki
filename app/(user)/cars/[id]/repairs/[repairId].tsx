@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { View, ScrollView, ActivityIndicator } from 'react-native';
 import { Text, Card } from 'react-native-paper';
 import { useLocalSearchParams } from 'expo-router';
-import { supabase } from '../../../@/services/supabase/client';
-import Breadcrumbs from '../../../@/components/common/Breadcrumbs';
+import { supabase } from '@/services/supabase/client';
+import { Breadcrumbs } from '@/components/common/Breadcrumbs';
 
 export default function RepairDetailScreen() {
   const { id, repairId } = useLocalSearchParams<{ id: string; repairId: string }>();

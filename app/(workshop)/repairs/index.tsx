@@ -136,7 +136,7 @@ const styles = StyleSheet.create({
     padding: 16,
     backgroundColor: colors.background.primary,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    borderBottomColor: colors.border.default,
   },
   title: {
     fontWeight: '600',

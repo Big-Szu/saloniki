@@ -50,13 +50,13 @@ function AuthChecker() {
                                       pathname.includes('/workshop/') ||
                                       pathname.includes('/(workshop)/');
             
-            // Only redirect if we're in an auth route or the root
-            if (isAuthRoute || pathname === '/') {
-              console.log('AuthChecker - Redirecting workshop to dashboard');
+            // Redirect if we're in an auth route, root, or user routes
+            if (isAuthRoute || pathname === '/' || segments[0] === '(user)' || pathname === '/dashboard') {
+              console.log('AuthChecker - Redirecting workshop to workshop dashboard');
               setTimeout(() => router.replace('/(workshop)/dashboard'), 0);
-            } else if (!isInWorkshopRoute && !pathname.includes('/repairs/')) {
-              // Don't redirect if we're already in a workshop route or viewing repairs
-              console.log('AuthChecker - Workshop user not in workshop route, but not redirecting from:', pathname);
+            } else if (!isInWorkshopRoute) {
+              console.log('AuthChecker - Workshop user not in workshop route, redirecting from:', pathname);
+              setTimeout(() => router.replace('/(workshop)/dashboard'), 0);
             }
           } else {
             console.log('AuthChecker - User is a regular user');

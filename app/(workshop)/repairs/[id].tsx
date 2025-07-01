@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { View, ScrollView, ActivityIndicator, StyleSheet, Alert } from 'react-native';
 import { Text, Card, Button, Chip } from 'react-native-paper';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -24,6 +24,17 @@ interface RepairDetail {
     model_id: number;
     year: number;
     user_id: string;
+    engine?: string;
+    color?: string;
+    vin?: string;
+    make?: {
+      id: number;
+      name: string;
+    };
+    model?: {
+      id: number;
+      name: string;
+    };
     user?: {
       email: string;
       profile?: {
@@ -39,42 +50,105 @@ export default function WorkshopRepairDetailScreen() {
   const [repair, setRepair] = useState<RepairDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const isMounted = useRef(true);
 
   useEffect(() => {
+    console.log('WorkshopRepairDetailScreen mounted with id:', id);
+    isMounted.current = true;
+
+    if (!id) {
+      console.error('No repair ID provided');
+      setError('No repair ID provided');
+      setLoading(false);
+      return;
+    }
+
     fetchRepairDetails();
+
+    return () => {
+      console.log('WorkshopRepairDetailScreen unmounting');
+      isMounted.current = false;
+    };
   }, [id]);
 
   const fetchRepairDetails = async () => {
     try {
-      // Fetch repair with related car and user information
-      const { data, error } = await supabase
+      console.log('Fetching repair details for ID:', id);
+      setError(null);
+
+      // Fetch repair with related car information
+      const { data: repairData, error: repairError } = await supabase
         .from('repairs')
         .select(`
           *,
-          cars (
+          car:cars!car_id (
             id,
             make_id,
             model_id,
             year,
-            user_id
+            user_id,
+            engine,
+            color,
+            vin,
+            make:car_makes!make_id (
+              id,
+              name
+            ),
+            model:car_models!model_id (
+              id,
+              name
+            )
           )
         `)
         .eq('id', id)
         .single();
 
-      if (error) throw error;
+      if (repairError) {
+        console.error('Supabase error:', repairError);
+        throw repairError;
+      }
 
-      // Fetch user profile separately if we have a car
-      if (data?.cars) {
-        const { data: profileData } = await supabase
+      if (!repairData) {
+        console.log('No repair data found');
+        throw new Error('Repair not found');
+      }
+
+      console.log('Repair data loaded:', repairData.id);
+      console.log('Car data:', repairData.car);
+
+      let finalData = { ...repairData };
+
+      // Fetch user profile if we have a car with user_id
+      if (repairData?.car?.user_id) {
+        console.log('Fetching user profile for:', repairData.car.user_id);
+        
+        // First try to get from profiles table
+        const { data: profileData, error: profileError } = await supabase
           .from('profiles')
-          .select('name, email')
-          .eq('id', data.cars.user_id)
+          .select('id, name, email')
+          .eq('id', repairData.car.user_id)
           .single();
 
-        if (profileData) {
-          data.car = {
-            ...data.cars,
+        if (profileError) {
+          console.error('Error fetching profile:', profileError);
+          
+          // If profile doesn't exist, try to get email from auth.users
+          // Note: This requires admin access which we don't have from client
+          // So we'll just show N/A for now
+          finalData.car = {
+            ...repairData.car,
+            user: {
+              email: 'N/A',
+              profile: {
+                name: 'User'
+              }
+            }
+          };
+        } else if (profileData) {
+          console.log('Profile data found:', profileData);
+          finalData.car = {
+            ...repairData.car,
             user: {
               email: profileData.email,
               profile: {
@@ -85,12 +159,21 @@ export default function WorkshopRepairDetailScreen() {
         }
       }
 
-      setRepair(data);
+      // Only update state if component is still mounted
+      if (isMounted.current) {
+        setRepair(finalData);
+        setError(null);
+        console.log('Repair state updated with data:', finalData);
+      }
     } catch (error) {
       console.error('Error fetching repair details:', error);
-      Alert.alert('Error', 'Failed to load repair details');
+      if (isMounted.current) {
+        setError(error instanceof Error ? error.message : 'Failed to load repair details');
+      }
     } finally {
-      setLoading(false);
+      if (isMounted.current) {
+        setLoading(false);
+      }
     }
   };
 
@@ -107,12 +190,16 @@ export default function WorkshopRepairDetailScreen() {
       if (error) throw error;
 
       Alert.alert('Success', 'Repair confirmed successfully');
-      setRepair({ ...repair, confirmed: true });
+      if (isMounted.current) {
+        setRepair({ ...repair, confirmed: true });
+      }
     } catch (error) {
       console.error('Error confirming repair:', error);
       Alert.alert('Error', 'Failed to confirm repair');
     } finally {
-      setUpdating(false);
+      if (isMounted.current) {
+        setUpdating(false);
+      }
     }
   };
 
@@ -135,13 +222,19 @@ export default function WorkshopRepairDetailScreen() {
 
               if (error) throw error;
 
-              Alert.alert('Success', 'Repair rejected and removed');
-              router.back();
+              Alert.alert('Success', 'Repair rejected and removed', [
+                {
+                  text: 'OK',
+                  onPress: () => router.back()
+                }
+              ]);
             } catch (error) {
               console.error('Error rejecting repair:', error);
               Alert.alert('Error', 'Failed to reject repair');
             } finally {
-              setUpdating(false);
+              if (isMounted.current) {
+                setUpdating(false);
+              }
             }
           }
         }
@@ -149,25 +242,38 @@ export default function WorkshopRepairDetailScreen() {
     );
   };
 
+  const handleGoBack = () => {
+    console.log('Going back to dashboard');
+    router.back();
+  };
+
+  // Show loading state while fetching data
   if (loading) {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={styles.loadingText}>Loading repair details...</Text>
       </View>
     );
   }
 
-  if (!repair) {
+  // Show error state if there's an error
+  if (error || !repair) {
     return (
       <View style={styles.center}>
-        <Text>Repair not found</Text>
-        <Button mode="contained" onPress={() => router.back()} style={styles.backButton}>
-          Go Back
+        <Text style={styles.errorText}>{error || 'Repair not found'}</Text>
+        <Button 
+          mode="contained" 
+          onPress={handleGoBack} 
+          style={styles.backButton}
+        >
+          Go Back to Dashboard
         </Button>
       </View>
     );
   }
 
+  // Show repair details
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
@@ -207,9 +313,27 @@ export default function WorkshopRepairDetailScreen() {
           <View style={styles.infoRow}>
             <Text style={styles.label}>Vehicle:</Text>
             <Text>
-              {repair.car?.year} - Make ID: {repair.car?.make_id}, Model ID: {repair.car?.model_id}
+              {repair.car?.year} {repair.car?.make?.name || `Make ${repair.car?.make_id}`} {repair.car?.model?.name || `Model ${repair.car?.model_id}`}
             </Text>
           </View>
+          {repair.car?.engine && (
+            <View style={styles.infoRow}>
+              <Text style={styles.label}>Engine:</Text>
+              <Text>{repair.car.engine}</Text>
+            </View>
+          )}
+          {repair.car?.color && (
+            <View style={styles.infoRow}>
+              <Text style={styles.label}>Color:</Text>
+              <Text>{repair.car.color}</Text>
+            </View>
+          )}
+          {repair.car?.vin && (
+            <View style={styles.infoRow}>
+              <Text style={styles.label}>VIN:</Text>
+              <Text>{repair.car.vin}</Text>
+            </View>
+          )}
         </Card.Content>
       </Card>
 
@@ -265,7 +389,7 @@ export default function WorkshopRepairDetailScreen() {
 
       <Button
         mode="text"
-        onPress={() => router.back()}
+        onPress={handleGoBack}
         style={styles.backButton}
       >
         Back to Dashboard
@@ -284,6 +408,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
+  },
+  loadingText: {
+    marginTop: 16,
+    color: colors.text.secondary,
+  },
+  errorText: {
+    fontSize: 16,
+    color: colors.danger,
+    marginBottom: 16,
+    textAlign: 'center',
   },
   header: {
     flexDirection: 'row',
